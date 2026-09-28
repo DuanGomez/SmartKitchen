@@ -1,0 +1,23 @@
+# Configuración local con credenciales (API keys) — nunca subir
+.claude/
+.mcp.json
+.env
+*.env
+
+# Herramientas locales
+apache-maven-3.9.6/
+.vscode/
+.idea/
+
+# Dependencias y builds
+node_modules/
+dist/
+.angular/
+target/
+
+# Archivos subidos en desarrollo
+smartkitchen-backend/uploads/
+
+*.log
+.DS_Store
+Thumbs.db
