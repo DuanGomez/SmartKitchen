@@ -1,12 +1,13 @@
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ToastService } from '../../../core/services/toast.service';
+import { IconComponent } from '../icon.component';
 import { animate, style, transition, trigger } from '@angular/animations';
 
 @Component({
   selector: 'sk-toast',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, IconComponent],
   animations: [
     trigger('toastAnim', [
       transition(':enter', [
@@ -22,23 +23,22 @@ import { animate, style, transition, trigger } from '@angular/animations';
     <div class="sk-toast-container">
       @for (t of toastSvc.toasts(); track t.id) {
         <div class="sk-toast toast-{{ t.type }}" @toastAnim>
-          <span class="toast-icon">{{ icons[t.type] }}</span>
+          <span class="toast-dot"><sk-icon [name]="icons[t.type]" [size]="13" [stroke]="2.4" /></span>
           <span>{{ t.message }}</span>
-          <button class="toast-close" (click)="toastSvc.remove(t.id)">✕</button>
+          <button class="toast-close" (click)="toastSvc.remove(t.id)" aria-label="Cerrar"><sk-icon name="close" [size]="15" /></button>
         </div>
       }
     </div>
   `,
   styles: [`
-    .toast-icon { font-size: 1rem; flex-shrink: 0; }
     .toast-close {
       margin-left: auto; background: none; border: none; cursor: pointer;
-      color: inherit; opacity: .6; font-size: .875rem; padding: .1rem .2rem;
+      color: inherit; opacity: .55; display: inline-flex; padding: .1rem;
       &:hover { opacity: 1; }
     }
   `]
 })
 export class ToastComponent {
   toastSvc = inject(ToastService);
-  icons: Record<string, string> = { success: '✓', error: '✕', warning: '⚠', info: 'ℹ' };
+  icons: Record<string, string> = { success: 'check', error: 'close', warning: 'alert', info: 'info' };
 }

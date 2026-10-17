@@ -10,12 +10,13 @@ import { ToastComponent } from '../../../shared/components/toast/toast.component
 import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
 import { Producto, Categoria, ProductoRequest } from '../../../core/models/models';
 import { animate, style, transition, trigger } from '@angular/animations';
+import { IconComponent } from '../../../shared/components/icon.component';
 
 
 @Component({
   selector: 'app-productos',
   standalone: true,
-  imports: [CommonModule, FormsModule, CurrencyPipe, SidebarComponent, TopbarComponent, ToastComponent, ConfirmDialogComponent],
+  imports: [CommonModule, FormsModule, CurrencyPipe, SidebarComponent, TopbarComponent, ToastComponent, ConfirmDialogComponent, IconComponent],
   animations: [
     trigger('rowAnim', [
       transition(':enter', [style({ opacity: 0, transform: 'translateY(-8px)' }), animate('200ms ease', style({ opacity: 1, transform: 'translateY(0)' }))])
@@ -38,15 +39,15 @@ import { animate, style, transition, trigger } from '@angular/animations';
             <div class="page-title"><h2>Catálogo</h2><p>{{ filtrados().length }} productos</p></div>
             <div class="page-actions">
               <div style="position:relative">
-                <span style="position:absolute;left:.85rem;top:50%;transform:translateY(-50%);color:var(--text-muted)">🔍</span>
-                <input class="sk-input" style="padding-left:2.5rem;width:240px" placeholder="Buscar producto..."
+                <sk-icon name="search" [size]="17" style="position:absolute;left:.95rem;top:50%;transform:translateY(-50%);color:var(--text-muted)" />
+                <input class="sk-input search" style="padding-left:2.6rem;width:240px;border-radius:999px" placeholder="Buscar producto..."
                        [(ngModel)]="q" (ngModelChange)="filtrar()">
               </div>
-              <select class="sk-select" style="width:180px" [(ngModel)]="catFiltro" (ngModelChange)="filtrar()">
+              <select class="sk-select" style="width:200px;border-radius:999px" [(ngModel)]="catFiltro" (ngModelChange)="filtrar()">
                 <option value="">Todas las categorías</option>
                 @for (c of categorias(); track c.id) { <option [value]="c.id">{{ c.nombre }}</option> }
               </select>
-              <button class="sk-btn sk-btn-primary" (click)="abrirModal()">+ Agregar</button>
+              <button class="sk-btn sk-btn-primary" (click)="abrirModal()"><sk-icon name="plus" [size]="18" /> Agregar</button>
             </div>
           </div>
 
@@ -54,7 +55,7 @@ import { animate, style, transition, trigger } from '@angular/animations';
           @if (loading()) {
             <div class="flex justify-center" style="padding:4rem"><div class="sk-spinner"></div></div>
           } @else if (filtrados().length === 0) {
-            <div class="empty-state"><div class="empty-icon">📦</div><p>No hay productos</p><button class="sk-btn sk-btn-primary" (click)="abrirModal()">+ Agregar primero</button></div>
+            <div class="empty-state"><div class="empty-icon"><sk-icon name="box" /></div><p>No hay productos</p><button class="sk-btn sk-btn-primary" (click)="abrirModal()"><sk-icon name="plus" [size]="18" /> Agregar el primero</button></div>
           } @else {
             <div class="sk-card" style="padding:0;overflow:hidden">
               <table class="sk-table">
@@ -68,7 +69,7 @@ import { animate, style, transition, trigger } from '@angular/animations';
                         <div class="flex items-center gap-1">
                           <div class="prod-thumb">
                             @if (p.imagen) { <img [src]="imgUrl(p.imagen)!" [alt]="p.nombre"> }
-                            @else { <span>🍽</span> }
+                            @else { <sk-icon name="image" [size]="18" /> }
                           </div>
                           <div>
                             <div class="fw-600 text-sm">{{ p.nombre }}</div>
@@ -77,7 +78,7 @@ import { animate, style, transition, trigger } from '@angular/animations';
                         </div>
                       </td>
                       <td><span class="text-sm">{{ p.categoriaNombre }}</span></td>
-                      <td><span class="sk-badge badge-info">{{ p.estacion }}</span></td>
+                      <td><span class="sk-badge badge-muted">{{ estLabel[p.estacion] ?? p.estacion }}</span></td>
                       <td><span class="fw-600">{{ p.precio | currency:'COP':'$':'1.0-0' }}</span></td>
                       <td>
                         <span class="sk-badge" [class]="p.activo ? 'badge-success' : 'badge-muted'">
@@ -86,8 +87,8 @@ import { animate, style, transition, trigger } from '@angular/animations';
                       </td>
                       <td>
                         <div class="flex gap-1">
-                          <button class="sk-btn sk-btn-ghost sk-btn-sm" (click)="abrirModal(p)" title="Editar">✏️</button>
-                          <button class="sk-btn sk-btn-danger sk-btn-sm" (click)="pedirEliminar(p)" title="Eliminar">🗑</button>
+                          <button class="sk-btn sk-btn-ghost sk-btn-sm" (click)="abrirModal(p)" title="Editar" aria-label="Editar"><sk-icon name="edit" [size]="16" /></button>
+                          <button class="sk-btn sk-btn-danger sk-btn-sm" (click)="pedirEliminar(p)" title="Eliminar" aria-label="Eliminar"><sk-icon name="trash" [size]="16" /></button>
                         </div>
                       </td>
                     </tr>
@@ -106,7 +107,7 @@ import { animate, style, transition, trigger } from '@angular/animations';
         <div class="sk-modal" style="width:min(620px,95vw)" (click)="$event.stopPropagation()">
           <div class="sk-modal-header">
             <h3>{{ editando() ? 'Editar producto' : 'Nuevo producto' }}</h3>
-            <button class="sk-btn sk-btn-ghost sk-btn-icon" (click)="cerrarModal()">✕</button>
+            <button class="sk-btn sk-btn-ghost sk-btn-icon" (click)="cerrarModal()" aria-label="Cerrar"><sk-icon name="close" [size]="18" /></button>
           </div>
 
           <form (ngSubmit)="guardar()" #frm="ngForm">
@@ -146,7 +147,7 @@ import { animate, style, transition, trigger } from '@angular/animations';
                 @if (previewImg) {
                   <img [src]="previewImg" style="max-height:140px;border-radius:var(--radius-md)">
                 } @else {
-                  <div class="upload-placeholder">📷 Clic para subir imagen</div>
+                  <div class="upload-placeholder"><sk-icon name="image" [size]="22" /> Clic para subir una foto</div>
                 }
               </div>
               <input #fileInput type="file" accept="image/*" style="display:none" (change)="onFile($event)">
@@ -163,13 +164,20 @@ import { animate, style, transition, trigger } from '@angular/animations';
     }
   `,
   styles: [`
-    .prod-thumb { width:40px; height:40px; border-radius:var(--radius-md); background:var(--bg-input); display:flex; align-items:center; justify-content:center; font-size:1.2rem; overflow:hidden; flex-shrink:0; img{width:100%;height:100%;object-fit:cover;} }
-    .img-upload { border:2px dashed var(--border); border-radius:var(--radius-md); padding:1.5rem; cursor:pointer; display:flex; align-items:center; justify-content:center; min-height:100px; transition:border-color var(--transition-fast); &:hover{border-color:var(--primary);} }
-    .upload-placeholder { color:var(--text-muted); font-size:.875rem; }
+    .prod-thumb { width:48px; height:48px; border-radius:12px; background:var(--bg-soft); color:var(--text-muted); display:flex; align-items:center; justify-content:center; overflow:hidden; flex-shrink:0; img{width:100%;height:100%;object-fit:cover;} }
+    .img-upload { border:1.5px dashed var(--border-strong); background:var(--bg-base); border-radius:var(--radius-md); padding:1.5rem; cursor:pointer; display:flex; align-items:center; justify-content:center; min-height:100px; transition:border-color var(--transition-fast); &:hover{border-color:var(--ink);} }
+    .upload-placeholder { color:var(--text-muted); font-size:.875rem; display:flex; align-items:center; gap:.5rem; }
+    @media (max-width: 767px) {
+      .sk-table th:nth-child(2), .sk-table td:nth-child(2), .sk-table th:nth-child(3), .sk-table td:nth-child(3), .sk-table th:nth-child(5), .sk-table td:nth-child(5) { display:none; }
+      .sk-table td { white-space:normal; }
+      .page-actions .sk-input, .page-actions .sk-select { width:100% !important; }
+      .page-actions > div { width:100%; }
+    }
   `]
 })
 export class ProductosComponent implements OnInit {
   imgUrl = productImageUrl;
+  estLabel: Partial<Record<string, string>> = { COCINA: 'Cocina', BARRA: 'Barra', MEXICO: 'México' };
   private api   = inject(ApiService);
   private toast = inject(ToastService);
 

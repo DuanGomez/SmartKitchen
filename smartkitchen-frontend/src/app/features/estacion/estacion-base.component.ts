@@ -7,11 +7,12 @@ import { TopbarComponent } from '../../shared/components/topbar/topbar.component
 import { ToastComponent } from '../../shared/components/toast/toast.component';
 import { EstacionCard } from '../../core/models/models';
 import { animate, style, transition, trigger } from '@angular/animations';
+import { IconComponent } from '../../shared/components/icon.component';
 
 @Component({
   selector: 'app-estacion-base',
   standalone: true,
-  imports: [CommonModule, DatePipe, SidebarComponent, TopbarComponent, ToastComponent],
+  imports: [CommonModule, DatePipe, SidebarComponent, TopbarComponent, ToastComponent, IconComponent],
   animations: [
     trigger('cardIn', [
       transition(':enter', [
@@ -34,15 +35,27 @@ import { animate, style, transition, trigger } from '@angular/animations';
     <div class="sk-layout">
       <sk-sidebar></sk-sidebar>
       <div class="sk-main">
-        <sk-topbar [title]="icono + ' ' + titulo"
-                   [subtitle]="cards().length + ' pedido' + (cards().length !== 1 ? 's' : '') + ' pendiente' + (cards().length !== 1 ? 's' : '')"
-                   [alerts]="newCount()"></sk-topbar>
+        <sk-topbar [title]="'Estación ' + titulo" subtitle="Pantalla de producción" [alerts]="newCount()"></sk-topbar>
         <div class="sk-content">
 
-          <!-- Nuevo pedido alert -->
+          <!-- Banner de la estación -->
+          <section class="banner">
+            <img [src]="foto" alt="" />
+            <div class="banner__copy">
+              <span class="banner__chip"><span class="live"></span> En vivo</span>
+              <h1>{{ titulo }}</h1>
+              <p>{{ descripcion }}</p>
+            </div>
+            <div class="banner__stats">
+              <div><strong>{{ cards().length }}</strong><span>Mesas</span></div>
+              <div><strong>{{ totalPendientes() }}</strong><span>Por preparar</span></div>
+            </div>
+          </section>
+
           @if (newCount() > 0) {
-            <div class="new-alert" @newAlert [style.borderColor]="color" [style.color]="color">
-              🔔 {{ newCount() }} nuevo{{ newCount() > 1 ? 's' : '' }} pedido{{ newCount() > 1 ? 's' : '' }}
+            <div class="new-alert" @newAlert>
+              <sk-icon name="bell" [size]="18" />
+              {{ newCount() }} nuevo{{ newCount() > 1 ? 's' : '' }} pedido{{ newCount() > 1 ? 's' : '' }}
             </div>
           }
 
@@ -50,67 +63,55 @@ import { animate, style, transition, trigger } from '@angular/animations';
             <div class="flex justify-center" style="padding:4rem"><div class="sk-spinner"></div></div>
           } @else if (cards().length === 0) {
             <div class="empty-state">
-              <div class="empty-icon">{{ icono }}</div>
-              <h3>Sin pedidos pendientes</h3>
-              <p class="text-muted text-sm">Los pedidos aparecerán aquí cuando sean enviados</p>
+              <div class="empty-icon"><sk-icon name="check-circle" /></div>
+              <h3>Todo al día</h3>
+              <p class="text-muted text-sm">Los pedidos aparecerán aquí en cuanto el mesero los envíe.</p>
             </div>
           } @else {
             <div class="est-grid">
               @for (card of cards(); track card.pedidoId) {
-                <div class="est-card" @cardIn [style.borderTopColor]="color" [class.urgente]="esUrgente(card)">
+                <article class="ticket" @cardIn [class.urgente]="esUrgente(card)">
 
-                  <div class="est-card-header" [style.background]="color + '15'">
-                    <div class="mesa-badge-big" [style.background]="color + '22'" [style.color]="color">
-                      {{ card.mesaNumero }}
-                    </div>
+                  <header class="ticket__head">
+                    <div class="mesa">{{ card.mesaNumero }}</div>
                     <div class="card-meta">
                       <div class="fw-600">Mesa {{ card.mesaNumero }}</div>
                       <div class="text-xs text-muted">{{ card.meseroNombre }}</div>
                     </div>
-                    <div class="card-header-right">
-                      <div class="card-time" [class.urgente-time]="esUrgente(card)">
-                        {{ card.fechaEnvio | date:'HH:mm' }}
-                        @if (esUrgente(card)) { <span class="urgente-tag">⚠ URGENTE</span> }
-                      </div>
+                    <div class="card-time" [class.urgente-time]="esUrgente(card)">
+                      <sk-icon name="clock" [size]="14" />
+                      {{ tiempoTranscurrido(card.fechaEnvio) }}
                     </div>
-                  </div>
+                  </header>
+                  @if (esUrgente(card)) { <div class="urgente-tag"><sk-icon name="alert" [size]="14" /> Lleva más de 10 minutos</div> }
 
                   <div class="est-items">
                     @for (item of card.items; track item.itemId) {
                       <div class="est-item" [class.listo]="item.estado === 'LISTO'">
-                        <div class="item-qty-badge">{{ item.cantidad }}×</div>
+                        <div class="item-qty">{{ item.cantidad }}</div>
                         <div class="item-det">
-                          <div class="fw-600 text-sm">{{ item.productoNombre }}</div>
-                          @if (item.observacion) { <div class="item-obs">💬 {{ item.observacion }}</div> }
+                          <div class="item-name">{{ item.productoNombre }}</div>
+                          @if (item.observacion) { <div class="item-obs"><sk-icon name="note" [size]="13" /> {{ item.observacion }}</div> }
                         </div>
-                        <div class="item-est">
-                          @if (item.estado === 'ENVIADO') {
-                            <button class="sk-btn sk-btn-success sk-btn-sm"
-                                    (click)="marcarListo(item.itemId)"
-                                    [disabled]="actualizando()">✓</button>
-                          } @else if (item.estado === 'LISTO') {
-                            <span class="sk-badge badge-success" style="font-size:.65rem">✓</span>
-                          }
-                        </div>
+                        @if (item.estado === 'ENVIADO') {
+                          <button class="check" (click)="marcarListo(item.itemId)" [disabled]="actualizando()" aria-label="Marcar listo">
+                            <sk-icon name="check" [size]="16" [stroke]="2.2" />
+                          </button>
+                        } @else if (item.estado === 'LISTO') {
+                          <span class="check check--done"><sk-icon name="check" [size]="16" [stroke]="2.2" /></span>
+                        }
                       </div>
                     }
                   </div>
 
-                  <div class="est-card-footer">
-                    <span class="pending-count">
-                      {{ pendientes(card) }} pendiente{{ pendientes(card) !== 1 ? 's' : '' }}
-                    </span>
-                    <div class="footer-right">
-                      <span class="time-ago">{{ tiempoTranscurrido(card.fechaEnvio) }}</span>
-                      <button class="sk-btn sk-btn-success sk-btn-sm mesa-lista-btn"
-                              (click)="marcarTodaMesa(card)"
-                              [disabled]="actualizando() || pendientes(card) === 0">
-                        ✓✓ Mesa lista
-                      </button>
-                    </div>
-                  </div>
-
-                </div>
+                  <footer class="ticket__foot">
+                    <span class="pending-count">{{ pendientes(card) }} pendiente{{ pendientes(card) !== 1 ? 's' : '' }} · {{ card.fechaEnvio | date:'HH:mm' }}</span>
+                    <button class="sk-btn sk-btn-primary sk-btn-sm" (click)="marcarTodaMesa(card)"
+                            [disabled]="actualizando() || pendientes(card) === 0">
+                      <sk-icon name="check" [size]="15" [stroke]="2.2" /> Mesa lista
+                    </button>
+                  </footer>
+                </article>
               }
             </div>
           }
@@ -119,45 +120,58 @@ import { animate, style, transition, trigger } from '@angular/animations';
     </div>
   `,
   styles: [`
-    .new-alert { padding:.75rem 1.25rem; border-radius:var(--radius-md); border:1px solid; background:rgba(255,107,53,.05); font-weight:600; margin-bottom:1.5rem; animation: blink 2s infinite; }
+    .banner { position: relative; height: 210px; border-radius: 28px; overflow: hidden; margin-bottom: 1.5rem; color: #fff; background: var(--bg-soft-2); }
+    .banner img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+    .banner::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(19,19,22,.78) 0%, rgba(19,19,22,.25) 70%, rgba(19,19,22,.1) 100%); }
+    .banner__copy { position: absolute; z-index: 1; left: 2rem; bottom: 1.75rem; }
+    .banner__chip { display: inline-flex; align-items: center; gap: .45rem; padding: 5px 12px; border-radius: 980px; background: rgba(255,255,255,.18); backdrop-filter: blur(10px); font-size: .78rem; font-weight: 600; }
+    .live { width: 7px; height: 7px; border-radius: 50%; background: #3ddc84; animation: pulse 1.6s infinite; }
+    .banner h1 { color: #fff; font-size: clamp(2rem, 4vw, 2.8rem); letter-spacing: -.045em; margin-top: .7rem; line-height: 1; }
+    .banner p { margin-top: .4rem; color: rgba(255,255,255,.82); }
+    .banner__stats { position: absolute; z-index: 1; right: 2rem; bottom: 1.75rem; display: flex; gap: 2rem; text-align: right; }
+    .banner__stats div { display: flex; flex-direction: column; }
+    .banner__stats strong { font-family: var(--display); font-size: 2.2rem; font-weight: 700; letter-spacing: -.04em; line-height: 1; }
+    .banner__stats span { font-size: .8rem; color: rgba(255,255,255,.75); margin-top: .3rem; }
 
-    .est-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:1.25rem; }
+    .new-alert { display: flex; align-items: center; gap: .6rem; padding: .8rem 1.1rem; border-radius: var(--radius-md); background: var(--primary-soft); color: var(--primary-dark); font-weight: 600; margin-bottom: 1.25rem; }
 
-    .est-card { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-lg); overflow:hidden; border-top:3px solid; transition:box-shadow var(--transition-base); &:hover{box-shadow:var(--shadow-md);} &.urgente{animation:blink 1.5s infinite;} }
-    .est-card-header { display:flex; align-items:center; gap:.75rem; padding:.85rem 1rem; }
-    .mesa-badge-big { width:44px; height:44px; border-radius:var(--radius-md); display:flex; align-items:center; justify-content:center; font-size:1.25rem; font-weight:800; flex-shrink:0; }
-    .card-meta { flex:1; min-width:0; }
-    .card-header-right { flex-shrink:0; text-align:right; }
-    .card-time { font-size:.78rem; color:var(--text-muted); font-family:'JetBrains Mono',monospace; }
-    .urgente-time { color:var(--danger); font-weight:700; }
-    .urgente-tag { display:block; font-size:.65rem; background:var(--danger-bg); color:var(--danger); padding:.1rem .35rem; border-radius:var(--radius-full); margin-top:.2rem; }
+    .est-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1rem; align-items: start; }
 
-    .est-items { padding:.5rem; display:flex; flex-direction:column; gap:.35rem; }
-    .est-item { display:flex; align-items:center; gap:.65rem; padding:.6rem .75rem; border-radius:var(--radius-md); background:var(--bg-input); transition:all var(--transition-fast); &.listo{background:var(--success-bg);opacity:.65;} }
-    .item-qty-badge { width:28px; height:28px; border-radius:50%; background:var(--bg-elevated); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:.8rem; flex-shrink:0; }
-    .item-det { flex:1; min-width:0; }
-    .item-obs { font-size:.72rem; color:var(--text-muted); }
-    .item-est { flex-shrink:0; }
+    .ticket { background: #fff; border: 1px solid var(--border); border-radius: 22px; overflow: hidden; transition: box-shadow var(--transition-base); &:hover { box-shadow: var(--shadow-md); } &.urgente { border-color: rgba(209,67,47,.45); animation: blink 1.6s infinite; } }
+    .ticket__head { display: flex; align-items: center; gap: .8rem; padding: 1rem 1.1rem .75rem; }
+    .mesa { width: 46px; height: 46px; border-radius: 14px; background: var(--ink); color: #fff; display: grid; place-items: center; font-family: var(--display); font-size: 1.25rem; font-weight: 700; flex-shrink: 0; }
+    .card-meta { flex: 1; min-width: 0; }
+    .card-time { display: inline-flex; align-items: center; gap: .3rem; font-size: .8rem; color: var(--text-muted); font-weight: 500; font-variant-numeric: tabular-nums; }
+    .urgente-time { color: var(--danger); font-weight: 700; }
+    .urgente-tag { display: flex; align-items: center; gap: .4rem; margin: 0 1.1rem .5rem; padding: .4rem .7rem; border-radius: 10px; background: var(--danger-bg); color: var(--danger); font-size: .76rem; font-weight: 600; }
 
-    .est-card-footer { display:flex; align-items:center; justify-content:space-between; gap:.5rem; padding:.65rem 1rem; border-top:1px solid var(--border); flex-wrap:wrap; }
-    .pending-count { font-size:.78rem; color:var(--warning); font-weight:600; }
-    .footer-right { display:flex; align-items:center; gap:.65rem; margin-left:auto; }
-    .time-ago { font-size:.72rem; color:var(--text-muted); font-family:'JetBrains Mono',monospace; }
-    .mesa-lista-btn { white-space:nowrap; }
+    .est-items { padding: 0 .6rem .4rem; display: flex; flex-direction: column; }
+    .est-item { display: flex; align-items: center; gap: .75rem; padding: .7rem .5rem; border-top: 1px solid var(--bg-soft); transition: opacity var(--transition-fast); &.listo { opacity: .5; .item-name { text-decoration: line-through; } } }
+    .item-qty { width: 30px; height: 30px; border-radius: 10px; background: var(--bg-soft); display: grid; place-items: center; font-weight: 700; font-size: .85rem; flex-shrink: 0; }
+    .item-det { flex: 1; min-width: 0; }
+    .item-name { font-weight: 600; font-size: .92rem; }
+    .item-obs { display: flex; align-items: center; gap: .3rem; margin-top: .15rem; font-size: .76rem; color: var(--warning); }
+    .check { width: 34px; height: 34px; border-radius: 50%; border: 1.5px solid var(--border-strong); background: #fff; color: var(--text-muted); display: grid; place-items: center; cursor: pointer; flex-shrink: 0; transition: all var(--transition-fast); &:hover { border-color: var(--success); color: var(--success); background: var(--success-bg); } &:disabled { opacity: .5; } }
+    .check--done { border-color: var(--success); background: var(--success); color: #fff; cursor: default; }
+
+    .ticket__foot { display: flex; align-items: center; justify-content: space-between; gap: .5rem; padding: .8rem 1.1rem; background: var(--bg-base); border-top: 1px solid var(--border); }
+    .pending-count { font-size: .8rem; color: var(--text-secondary); font-weight: 500; }
 
     @media (max-width: 767px) {
       .est-grid { grid-template-columns: 1fr; }
-    }
-    @media (min-width: 768px) and (max-width: 1100px) {
-      .est-grid { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+      .banner { height:auto; min-height:210px; display:flex; flex-direction:column; justify-content:flex-end; gap:1rem; padding:1.25rem; }
+      .banner__copy, .banner__stats { position:relative; left:auto; right:auto; bottom:auto; top:auto; }
+      .banner__stats { justify-content:flex-start; text-align:left; gap:1.75rem; padding-top:.9rem; border-top:1px solid rgba(255,255,255,.2); }
+      .banner__stats strong { font-size:1.6rem; }
+      .banner::after { background: linear-gradient(180deg, rgba(19,19,22,.25) 0%, rgba(19,19,22,.8) 100%); }
     }
   `]
 })
 export class EstacionBaseComponent implements OnInit, OnDestroy {
   @Input() estacion!: 'cocina' | 'barra' | 'mexico';
   @Input() titulo = '';
-  @Input() icono  = '';
-  @Input() color  = 'var(--primary)';
+  @Input() foto   = '';
+  @Input() descripcion = '';
 
   private api   = inject(ApiService);
   private toast = inject(ToastService);
@@ -203,6 +217,7 @@ export class EstacionBaseComponent implements OnInit, OnDestroy {
     });
   }
 
+  totalPendientes() { return this.cards().reduce((n, c) => n + this.pendientes(c), 0); }
   pendientes(card: EstacionCard)  { return card.items.filter(i => i.estado === 'ENVIADO').length; }
   esUrgente(card: EstacionCard) {
     if (!card.fechaEnvio) return false;

@@ -5,7 +5,13 @@
 import { Estacion, EstadoItem, MetodoPago, Rol } from '../models/models';
 
 export const DEMO_PASSWORD = 'asados123';
-export const DEMO_DB_VERSION = 1;
+export const DEMO_DB_VERSION = 2;
+
+/** Fotos reales de la carta (public/photos/menu), en el mismo orden que los productos. Créditos en CREDITS.md. */
+const FOTOS = [
+  'churrasco', 'costilla-bbq', 'pechuga', 'picada', 'chorizo', 'morcilla', 'papas', 'yuca', 'limonada', 'mango', 'gaseosa',
+  'agua', 'cafe', 'aromatica', 'mojito', 'michelada', 'taco-carne', 'taco-pollo', 'burrito', 'nachos', 'quesadilla',
+];
 
 export interface DbUsuario { id: number; nombre: string; username: string; password: string; rol: Rol; activo: boolean; }
 export interface DbMesa { id: number; numero: number; nombre: string; capacidad: number; estado: 'DISPONIBLE' | 'OCUPADA'; meseroId: number | null; }
@@ -67,7 +73,7 @@ export function createDemoDb(): DemoDb {
     ['Burrito Mixto', 24000, 'Res, pollo, frijol y queso', 7], ['Nachos con Queso', 18000, 'Nachos con queso fundido y jalapeños', 8],
     ['Quesadilla', 16000, 'Queso y pollo', 8],
   ] as [string, number, string, number][]).map(([nombre, precio, descripcion, categoriaId], i) => ({
-    id: i + 1, nombre, precio, descripcion, imagen: null, categoriaId, activo: true,
+    id: i + 1, nombre, precio, descripcion, imagen: `photos/menu/${FOTOS[i]}.webp`, categoriaId, activo: true,
   }));
 
   const pedidos: DbPedido[] = [];

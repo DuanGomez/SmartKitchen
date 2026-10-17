@@ -8,12 +8,13 @@ import { SidebarComponent } from '../../../shared/components/sidebar/sidebar.com
 import { TopbarComponent } from '../../../shared/components/topbar/topbar.component';
 import { ToastComponent } from '../../../shared/components/toast/toast.component';
 import { Mesa } from '../../../core/models/models';
-import { animate, style, transition, trigger, stagger, query } from '@angular/animations';
+import { animate, style, transition, trigger } from '@angular/animations';
+import { IconComponent } from '../../../shared/components/icon.component';
 
 @Component({
   selector: 'app-mesas',
   standalone: true,
-  imports: [CommonModule, SidebarComponent, TopbarComponent, ToastComponent],
+  imports: [CommonModule, SidebarComponent, TopbarComponent, ToastComponent, IconComponent],
   animations: [
     trigger('mesaEnter', [
       transition(':enter', [
@@ -40,18 +41,26 @@ import { animate, style, transition, trigger, stagger, query } from '@angular/an
         <sk-topbar title="Mesas" [subtitle]="subtitleMsg" [alerts]="ocupadas()"></sk-topbar>
         <div class="sk-content">
 
-          <!-- Legend + filter -->
-          <div class="mesas-toolbar">
-            <div class="legend">
-              <div class="legend-item"><div class="legend-dot dot-libre"></div><span>Disponible ({{ libres() }})</span></div>
-              <div class="legend-item"><div class="legend-dot dot-ocupada"></div><span>Ocupada ({{ ocupadas() }})</span></div>
+          <!-- Banner del salón -->
+          <section class="salon">
+            <img src="photos/salon.webp" alt="" />
+            <div class="salon__copy">
+              <h1>Salón</h1>
+              <p>Toca una mesa para abrir o continuar su pedido.</p>
             </div>
+            <div class="salon__stats">
+              <div><strong>{{ libres() }}</strong><span>Libres</span></div>
+              <div><strong>{{ ocupadas() }}</strong><span>Ocupadas</span></div>
+            </div>
+          </section>
+
+          <div class="mesas-toolbar">
             <div class="filter-tabs">
               @for (f of filtros; track f.key) {
                 <button class="filter-tab" [class.active]="filtroActivo === f.key" (click)="filtroActivo = f.key">{{ f.label }}</button>
               }
             </div>
-            <button class="sk-btn sk-btn-ghost sk-btn-sm" (click)="cargar()" [disabled]="loading()">↻ Actualizar</button>
+            <button class="sk-btn sk-btn-ghost sk-btn-sm" (click)="cargar()" [disabled]="loading()"><sk-icon name="refresh" [size]="16" /> Actualizar</button>
           </div>
 
           <!-- Grid de mesas -->
@@ -62,15 +71,20 @@ import { animate, style, transition, trigger, stagger, query } from '@angular/an
               @for (m of mesasFiltradas(); track m.id) {
                 <div class="mesa-card" [class.ocupada]="m.estado === 'OCUPADA'" [class.disponible]="m.estado === 'DISPONIBLE'"
                      @mesaEnter [@mesaChange]="m.estado" (click)="seleccionar(m)">
+                  <div class="mesa-top">
+                    <span class="mesa-badge" [class.ocupada-badge]="m.estado === 'OCUPADA'" [class.libre-badge]="m.estado !== 'OCUPADA'">
+                      {{ m.estado === 'OCUPADA' ? 'Ocupada' : 'Libre' }}
+                    </span>
+                  </div>
                   <div class="mesa-numero">{{ m.numero }}</div>
                   <div class="mesa-nombre">{{ m.nombre }}</div>
-                  @if (m.estado === 'OCUPADA') {
-                    <div class="mesa-mesero">{{ m.meseroNombre }}</div>
-                    <div class="mesa-badge ocupada-badge">OCUPADA</div>
-                  } @else {
-                    <div class="mesa-cap">{{ m.capacidad }} personas</div>
-                    <div class="mesa-badge libre-badge">LIBRE</div>
-                  }
+                  <div class="mesa-foot">
+                    @if (m.estado === 'OCUPADA') {
+                      <sk-icon name="user" [size]="14" /><span class="truncate">{{ m.meseroNombre }}</span>
+                    } @else {
+                      <sk-icon name="users" [size]="14" /><span>{{ m.capacidad }} personas</span>
+                    }
+                  </div>
                 </div>
               }
             </div>
@@ -85,7 +99,7 @@ import { animate, style, transition, trigger, stagger, query } from '@angular/an
         <div class="sk-modal" (click)="$event.stopPropagation()" style="max-width:400px">
           <div class="sk-modal-header">
             <h3>Mesa {{ mesaSel()!.numero }}</h3>
-            <button class="sk-btn sk-btn-ghost sk-btn-icon" (click)="mesaSel.set(null)">✕</button>
+            <button class="sk-btn sk-btn-ghost sk-btn-icon" (click)="mesaSel.set(null)" aria-label="Cerrar"><sk-icon name="close" [size]="18" /></button>
           </div>
 
           @if (mesaSel()!.estado === 'DISPONIBLE') {
@@ -107,7 +121,7 @@ import { animate, style, transition, trigger, stagger, query } from '@angular/an
             </div>
             <div class="sk-modal-footer">
               <button class="sk-btn sk-btn-ghost" (click)="mesaSel.set(null)">Cancelar</button>
-              <button class="sk-btn sk-btn-primary" (click)="irAPedido(mesaSel()!.id)">Ver pedido →</button>
+              <button class="sk-btn sk-btn-primary" (click)="irAPedido(mesaSel()!.id)">Ver pedido <sk-icon name="arrow-right" [size]="16" /></button>
             </div>
           }
         </div>
@@ -115,46 +129,43 @@ import { animate, style, transition, trigger, stagger, query } from '@angular/an
     }
   `,
   styles: [`
-    .mesas-toolbar { display:flex; align-items:center; gap:1.5rem; margin-bottom:2rem; flex-wrap:wrap; }
-    .legend { display:flex; gap:1rem; }
-    .legend-item { display:flex; align-items:center; gap:.4rem; font-size:.8rem; color:var(--text-secondary); }
-    .legend-dot { width:10px; height:10px; border-radius:50%; }
-    .dot-libre   { background:var(--success); }
-    .dot-ocupada { background:var(--danger); animation: pulse 2s infinite; }
+    .salon { position:relative; height:190px; border-radius:28px; overflow:hidden; margin-bottom:1.5rem; color:#fff; background:var(--bg-soft-2); }
+    .salon img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+    .salon::after { content:''; position:absolute; inset:0; background:linear-gradient(90deg, rgba(19,19,22,.75) 0%, rgba(19,19,22,.15) 75%); }
+    .salon__copy { position:absolute; z-index:1; left:2rem; bottom:1.6rem; h1 { color:#fff; font-size:clamp(2rem,4vw,2.6rem); letter-spacing:-.045em; line-height:1; } p { margin-top:.45rem; color:rgba(255,255,255,.82); } }
+    .salon__stats { position:absolute; z-index:1; right:2rem; bottom:1.6rem; display:flex; gap:2rem; text-align:right; div { display:flex; flex-direction:column; } strong { font-family:var(--display); font-size:2.1rem; font-weight:700; letter-spacing:-.04em; line-height:1; } span { font-size:.8rem; color:rgba(255,255,255,.75); margin-top:.3rem; } }
 
-    .filter-tabs { display:flex; gap:.25rem; background:var(--bg-surface); padding:.3rem; border-radius:var(--radius-md); }
-    .filter-tab { padding:.35rem .85rem; border-radius:var(--radius-sm); font-size:.8rem; font-weight:600; background:none; border:none; color:var(--text-muted); cursor:pointer; font-family:inherit; transition:all var(--transition-fast); &:hover{color:var(--text-primary);} &.active{background:var(--bg-card);color:var(--text-primary);box-shadow:var(--shadow-sm);} }
+    .mesas-toolbar { display:flex; align-items:center; justify-content:space-between; gap:1rem; margin-bottom:1.25rem; flex-wrap:wrap; }
+    .filter-tabs { display:flex; gap:.2rem; background:var(--bg-soft-2); padding:.25rem; border-radius:999px; }
+    .filter-tab { padding:.45rem 1rem; border-radius:999px; font-size:.84rem; font-weight:600; background:none; border:none; color:var(--text-secondary); cursor:pointer; font-family:inherit; transition:all var(--transition-fast); &:hover{color:var(--text-primary);} &.active{background:#fff;color:var(--text-primary);box-shadow:0 1px 3px rgba(19,19,22,.12);} }
 
-    .mesas-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:1rem; }
-
+    .mesas-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(168px,1fr)); gap:.9rem; }
     .mesa-card {
-      aspect-ratio:1; border-radius:var(--radius-lg); border:2px solid var(--border);
-      display:flex; flex-direction:column; align-items:center; justify-content:center; gap:.35rem;
-      cursor:pointer; position:relative; overflow:hidden;
-      transition:transform var(--transition-base), border-color var(--transition-base), box-shadow var(--transition-base);
-      &:hover { transform: scale(1.04); }
+      border-radius:22px; border:1px solid var(--border); background:#fff; padding:1rem 1.1rem;
+      display:flex; flex-direction:column; gap:.15rem; cursor:pointer; min-height:160px;
+      transition:transform var(--transition-base), box-shadow var(--transition-base), border-color var(--transition-base);
+      &:hover { transform:translateY(-3px); box-shadow:var(--shadow-md); }
     }
-    .mesa-card.disponible {
-      background: linear-gradient(145deg, var(--bg-card), var(--bg-elevated));
-      border-color: rgba(0,184,148,.25);
-      &:hover { border-color: var(--success); box-shadow: 0 0 24px rgba(0,184,148,.15); }
-    }
-    .mesa-card.ocupada {
-      background: linear-gradient(145deg, rgba(225,112,85,.1), rgba(225,112,85,.05));
-      border-color: rgba(225,112,85,.4);
-      box-shadow: 0 0 20px rgba(225,112,85,.08);
-      &:hover { border-color: var(--danger); box-shadow: 0 0 24px rgba(225,112,85,.2); }
-    }
-    .mesa-numero { font-size:2rem; font-weight:800; line-height:1; }
-    .mesa-nombre { font-size:.72rem; color:var(--text-muted); font-weight:500; }
-    .mesa-mesero { font-size:.72rem; color:var(--text-secondary); max-width:90%; text-align:center; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-    .mesa-cap { font-size:.72rem; color:var(--text-muted); }
-    .mesa-badge { position:absolute; bottom:.5rem; right:.5rem; font-size:.62rem; font-weight:700; padding:.2rem .5rem; border-radius:var(--radius-full); }
-    .libre-badge   { background:rgba(0,184,148,.15); color:var(--success); }
-    .ocupada-badge { background:rgba(225,112,85,.2); color:var(--danger); }
+    .mesa-card.ocupada { background:var(--ink); border-color:var(--ink); color:#fff; .mesa-nombre, .mesa-foot { color:rgba(255,255,255,.65); } }
+    .mesa-top { display:flex; justify-content:flex-end; margin-bottom:.4rem; }
+    .mesa-numero { font-family:var(--display); font-size:2.4rem; font-weight:700; letter-spacing:-.05em; line-height:1; }
+    .mesa-nombre { font-size:.8rem; color:var(--text-muted); font-weight:500; }
+    .mesa-foot { margin-top:auto; padding-top:.7rem; display:flex; align-items:center; gap:.35rem; font-size:.78rem; color:var(--text-secondary); min-width:0; }
+    .mesa-badge { font-size:.7rem; font-weight:600; padding:.2rem .6rem; border-radius:999px; }
+    .libre-badge   { background:var(--success-bg); color:var(--success); }
+    .ocupada-badge { background:var(--primary); color:#fff; }
 
-    .mesa-sel-info { background:var(--bg-input); border-radius:var(--radius-md); padding:.75rem 1rem; display:flex; flex-direction:column; gap:.5rem; margin-bottom:.5rem; }
+    .mesa-sel-info { background:var(--bg-base); border:1px solid var(--border); border-radius:var(--radius-md); padding:.85rem 1rem; display:flex; flex-direction:column; gap:.5rem; margin-bottom:.5rem; }
     .info-row { display:flex; justify-content:space-between; align-items:center; font-size:.875rem; span:first-child{color:var(--text-muted);} }
+
+    @media (max-width: 600px) {
+      .salon { height:auto; min-height:210px; display:flex; flex-direction:column; justify-content:flex-end; gap:1rem; padding:1.25rem; }
+      .salon__copy, .salon__stats { position:relative; left:auto; right:auto; bottom:auto; top:auto; }
+      .salon__stats { justify-content:flex-start; text-align:left; gap:1.75rem; padding-top:.9rem; border-top:1px solid rgba(255,255,255,.2); }
+      .salon__stats strong { font-size:1.6rem; }
+      .salon::after { background:linear-gradient(180deg, rgba(19,19,22,.25) 0%, rgba(19,19,22,.8) 100%); }
+      .mesas-grid { grid-template-columns:repeat(2,1fr); }
+    }
   `]
 })
 export class MesasComponent implements OnInit, OnDestroy {

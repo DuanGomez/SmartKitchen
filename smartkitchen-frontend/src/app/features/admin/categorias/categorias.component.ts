@@ -8,11 +8,12 @@ import { TopbarComponent } from '../../../shared/components/topbar/topbar.compon
 import { ToastComponent } from '../../../shared/components/toast/toast.component';
 import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
 import { Categoria, CategoriaRequest, Estacion } from '../../../core/models/models';
+import { IconComponent } from '../../../shared/components/icon.component';
 
 @Component({
   selector: 'app-categorias',
   standalone: true,
-  imports: [CommonModule, FormsModule, SidebarComponent, TopbarComponent, ToastComponent, ConfirmDialogComponent],
+  imports: [CommonModule, FormsModule, SidebarComponent, TopbarComponent, ToastComponent, ConfirmDialogComponent, IconComponent],
   template: `
     <sk-toast></sk-toast>
     @if (showConfirm()) {
@@ -26,15 +27,15 @@ import { Categoria, CategoriaRequest, Estacion } from '../../../core/models/mode
         <div class="sk-content">
           <div class="sk-page-header">
             <div class="page-title"><h2>Categorías</h2><p>{{ categorias().length }} categorías</p></div>
-            <button class="sk-btn sk-btn-primary" (click)="abrirModal()">+ Nueva categoría</button>
+            <button class="sk-btn sk-btn-primary" (click)="abrirModal()"><sk-icon name="plus" [size]="18" /> Nueva categoría</button>
           </div>
 
           <!-- Cards por estación -->
           @for (est of estaciones; track est.key) {
             <div class="est-section">
-              <div class="est-header" [style.color]="est.color">
-                <span>{{ est.icon }}</span><span>{{ est.label }}</span>
-                <span class="sk-badge" [style.background]="est.color + '22'" [style.color]="est.color">{{ getByEst(est.key).length }}</span>
+              <div class="est-header">
+                <img class="est-photo" [src]="est.foto" alt="" />
+                <div><h3>{{ est.label }}</h3><p>{{ getByEst(est.key).length }} categorías</p></div>
               </div>
               <div class="cat-grid">
                 @for (c of getByEst(est.key); track c.id) {
@@ -48,8 +49,8 @@ import { Categoria, CategoriaRequest, Estacion } from '../../../core/models/mode
                     </div>
                     <div class="cat-actions">
                       <span class="sk-badge" [class]="c.activo ? 'badge-success' : 'badge-muted'">{{ c.activo ? 'Activa' : 'Inactiva' }}</span>
-                      <button class="sk-btn sk-btn-ghost sk-btn-icon" (click)="abrirModal(c)">✏️</button>
-                      <button class="sk-btn sk-btn-danger sk-btn-icon" (click)="pedirEliminar(c)">🗑</button>
+                      <button class="sk-btn sk-btn-ghost sk-btn-icon" (click)="abrirModal(c)" aria-label="Editar"><sk-icon name="edit" [size]="17" /></button>
+                      <button class="sk-btn sk-btn-danger sk-btn-icon" (click)="pedirEliminar(c)" aria-label="Eliminar"><sk-icon name="trash" [size]="17" /></button>
                     </div>
                   </div>
                 }
@@ -68,7 +69,7 @@ import { Categoria, CategoriaRequest, Estacion } from '../../../core/models/mode
         <div class="sk-modal" (click)="$event.stopPropagation()">
           <div class="sk-modal-header">
             <h3>{{ editando() ? 'Editar categoría' : 'Nueva categoría' }}</h3>
-            <button class="sk-btn sk-btn-ghost sk-btn-icon" (click)="cerrarModal()">✕</button>
+            <button class="sk-btn sk-btn-ghost sk-btn-icon" (click)="cerrarModal()" aria-label="Cerrar"><sk-icon name="close" [size]="18" /></button>
           </div>
           <form (ngSubmit)="guardar()">
             <div style="display:flex;flex-direction:column;gap:1rem">
@@ -78,7 +79,7 @@ import { Categoria, CategoriaRequest, Estacion } from '../../../core/models/mode
                 <label>Estación *</label>
                 <select class="sk-select" [(ngModel)]="form.estacion" name="estacion" required>
                   <option value="">Seleccionar estación...</option>
-                  @for (e of estaciones; track e.key) { <option [value]="e.key">{{ e.icon }} {{ e.label }}</option> }
+                  @for (e of estaciones; track e.key) { <option [value]="e.key">{{ e.label }}</option> }
                 </select>
               </div>
               <div class="sk-input-group">
@@ -101,13 +102,14 @@ import { Categoria, CategoriaRequest, Estacion } from '../../../core/models/mode
   `,
   styles: [`
     .est-section { margin-bottom: 2rem; }
-    .est-header { display:flex; align-items:center; gap:.75rem; margin-bottom:1rem; font-size:1rem; font-weight:700; }
+    .est-header { display:flex; align-items:center; gap:.9rem; margin-bottom:.9rem; p { font-size:.8rem; color:var(--text-muted); } }
+    .est-photo { width:52px; height:52px; border-radius:14px; object-fit:cover; }
     .cat-grid { display:flex; flex-direction:column; gap:.5rem; }
-    .cat-card { display:flex; align-items:center; justify-content:space-between; padding:1rem 1.25rem; background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-md); transition:border-color var(--transition-fast); &:hover{border-color:rgba(255,255,255,.12);} }
+    .cat-card { display:flex; align-items:center; justify-content:space-between; padding:1rem 1.25rem; background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-md); transition:border-color var(--transition-fast); &:hover{border-color:var(--border-strong);} }
     .cat-info { display:flex; align-items:center; gap:.75rem; }
     .cat-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
     .cat-actions { display:flex; align-items:center; gap:.5rem; }
-    .cat-empty { padding:1rem; color:var(--text-muted); font-size:.875rem; background:var(--bg-input); border-radius:var(--radius-md); }
+    .cat-empty { padding:1rem; color:var(--text-muted); font-size:.875rem; background:#fff; border:1px dashed var(--border-strong); border-radius:var(--radius-md); }
   `]
 })
 export class CategoriasComponent implements OnInit {
@@ -125,9 +127,9 @@ export class CategoriasComponent implements OnInit {
   form: CategoriaRequest = { nombre: '', descripcion: '', estacion: '' as Estacion, activo: true };
 
   estaciones = [
-    { key: 'COCINA' as Estacion, label: 'Cocina', icon: '🍳', color: 'var(--danger)' },
-    { key: 'BARRA'  as Estacion, label: 'Barra',  icon: '🍹', color: 'var(--accent-blue)' },
-    { key: 'MEXICO' as Estacion, label: 'México', icon: '🌮', color: 'var(--warning)' },
+    { key: 'COCINA' as Estacion, label: 'Cocina', foto: 'photos/cocina.webp', color: 'var(--primary)' },
+    { key: 'BARRA'  as Estacion, label: 'Barra',  foto: 'photos/barra.webp',  color: 'var(--accent-blue)' },
+    { key: 'MEXICO' as Estacion, label: 'México', foto: 'photos/mexico.webp', color: 'var(--success)' },
   ];
 
   ngOnInit() { this.cargar(); }

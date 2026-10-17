@@ -8,11 +8,12 @@ import { TopbarComponent } from '../../../shared/components/topbar/topbar.compon
 import { ToastComponent } from '../../../shared/components/toast/toast.component';
 import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
 import { Usuario, UsuarioRequest, Rol } from '../../../core/models/models';
+import { IconComponent } from '../../../shared/components/icon.component';
 
 @Component({
   selector: 'app-usuarios',
   standalone: true,
-  imports: [CommonModule, FormsModule, SidebarComponent, TopbarComponent, ToastComponent, ConfirmDialogComponent],
+  imports: [CommonModule, FormsModule, SidebarComponent, TopbarComponent, ToastComponent, ConfirmDialogComponent, IconComponent],
   template: `
     <sk-toast></sk-toast>
     @if (showConfirm()) {
@@ -26,7 +27,7 @@ import { Usuario, UsuarioRequest, Rol } from '../../../core/models/models';
         <div class="sk-content">
           <div class="sk-page-header">
             <div class="page-title"><h2>Equipo</h2><p>{{ usuarios().length }} usuarios registrados</p></div>
-            <button class="sk-btn sk-btn-primary" (click)="abrirModal()">+ Nuevo usuario</button>
+            <button class="sk-btn sk-btn-primary" (click)="abrirModal()"><sk-icon name="plus" [size]="18" /> Nuevo usuario</button>
           </div>
 
           <div class="sk-card" style="padding:0;overflow:hidden">
@@ -42,12 +43,12 @@ import { Usuario, UsuarioRequest, Rol } from '../../../core/models/models';
                       </div>
                     </td>
                     <td><span class="mono text-sm text-muted">@{{ u.username }}</span></td>
-                    <td><span class="sk-badge" [style.background]="rolColor(u.rol) + '22'" [style.color]="rolColor(u.rol)">{{ u.rol }}</span></td>
+                    <td><span class="sk-badge badge-muted"><span class="rol-dot" [style.background]="rolColor(u.rol)"></span>{{ rolLabel[u.rol] ?? u.rol }}</span></td>
                     <td><span class="sk-badge" [class]="u.activo ? 'badge-success' : 'badge-muted'">{{ u.activo ? 'Activo' : 'Inactivo' }}</span></td>
                     <td>
                       <div class="flex gap-1">
-                        <button class="sk-btn sk-btn-ghost sk-btn-sm" (click)="abrirModal(u)">✏️ Editar</button>
-                        <button class="sk-btn sk-btn-danger sk-btn-sm" (click)="pedirEliminar(u)">🗑</button>
+                        <button class="sk-btn sk-btn-ghost sk-btn-sm" (click)="abrirModal(u)"><sk-icon name="edit" [size]="15" /> Editar</button>
+                        <button class="sk-btn sk-btn-danger sk-btn-sm" (click)="pedirEliminar(u)" aria-label="Eliminar"><sk-icon name="trash" [size]="16" /></button>
                       </div>
                     </td>
                   </tr>
@@ -64,7 +65,7 @@ import { Usuario, UsuarioRequest, Rol } from '../../../core/models/models';
         <div class="sk-modal" (click)="$event.stopPropagation()">
           <div class="sk-modal-header">
             <h3>{{ editando() ? 'Editar usuario' : 'Nuevo usuario' }}</h3>
-            <button class="sk-btn sk-btn-ghost sk-btn-icon" (click)="cerrarModal()">✕</button>
+            <button class="sk-btn sk-btn-ghost sk-btn-icon" (click)="cerrarModal()" aria-label="Cerrar"><sk-icon name="close" [size]="18" /></button>
           </div>
           <form (ngSubmit)="guardar()" style="display:flex;flex-direction:column;gap:1rem">
             <div class="grid-2">
@@ -102,7 +103,11 @@ import { Usuario, UsuarioRequest, Rol } from '../../../core/models/models';
     }
   `,
   styles: [`
-    .u-avatar { width:36px; height:36px; border-radius:50%; background:var(--primary-glow); border:2px solid var(--primary); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:.8rem; color:var(--primary); flex-shrink:0; }
+    .u-avatar { width:36px; height:36px; border-radius:50%; background:var(--bg-soft); display:flex; align-items:center; justify-content:center; font-weight:600; font-size:.8rem; color:var(--text-primary); flex-shrink:0; }
+    .rol-dot { width:7px; height:7px; border-radius:50%; }
+    @media (max-width: 767px) {
+      .sk-table th:nth-child(2), .sk-table td:nth-child(2), .sk-table th:nth-child(4), .sk-table td:nth-child(4) { display:none; }
+    }
     .mono { font-family:'JetBrains Mono',monospace; }
   `]
 })
@@ -125,7 +130,8 @@ export class UsuariosComponent implements OnInit {
 
   ngOnInit() { this.cargar(); }
   cargar()   { this.api.getUsuarios().subscribe(u => this.usuarios.set(u)); }
-  initials(nombre: string) { return nombre.split(' ').map(w => w[0]).slice(0,2).join(''); }
+  initials(nombre: string) { return nombre.split(' ').filter(w => /^\p{L}/u.test(w)).map(w => w[0]).slice(0, 2).join('').toUpperCase(); }
+  rolLabel: Partial<Record<string, string>> = { ADMIN: 'Administrador', MESERO: 'Mesero', CAJA: 'Caja', COCINA: 'Cocina', BARRA: 'Barra', MEXICO: 'México' };
   rolColor(rol: Rol) { return this.rolColors[rol] ?? 'var(--text-muted)'; }
 
   abrirModal(u?: Usuario) {

@@ -5,6 +5,6 @@ import { EstacionBaseComponent } from '../estacion-base.component';
   selector: 'app-mexico',
   standalone: true,
   imports: [EstacionBaseComponent],
-  template: `<app-estacion-base estacion="mexico" titulo="México" icono="🌮" [color]="'var(--warning)'"></app-estacion-base>`
+  template: `<app-estacion-base estacion="mexico" titulo="México" foto="photos/mexico.webp" descripcion="Tacos, burritos y nachos"></app-estacion-base>`
 })
 export class MexicoComponent {}

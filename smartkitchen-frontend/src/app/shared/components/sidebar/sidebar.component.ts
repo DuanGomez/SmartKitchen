@@ -1,4 +1,5 @@
 import { DcodeaBadgeComponent } from '../dcodea-badge.component';
+import { IconComponent } from '../icon.component';
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
@@ -11,7 +12,7 @@ interface NavSection { title: string; items: NavItem[]; }
 @Component({
   selector: 'sk-sidebar',
   standalone: true,
-  imports: [CommonModule, RouterModule, DcodeaBadgeComponent],
+  imports: [CommonModule, RouterModule, DcodeaBadgeComponent, IconComponent],
   template: `
     <!-- Overlay móvil -->
     @if (layout.sidebarOpen()) {
@@ -24,7 +25,7 @@ interface NavSection { title: string; items: NavItem[]; }
         <div class="logo-mark">SK</div>
         <div>
           <div class="logo-text">SmartKitchen</div>
-          <div class="logo-sub">POS SYSTEM</div>
+          <div class="logo-sub">Punto de venta</div>
         </div>
       </div>
 
@@ -33,12 +34,9 @@ interface NavSection { title: string; items: NavItem[]; }
         <div class="user-avatar">{{ initials }}</div>
         <div class="user-info">
           <div class="user-name">{{ auth.user()?.nombre }}</div>
-          <div class="user-role">{{ auth.rol() }}</div>
+          <div class="user-role">{{ rolLabel }}</div>
         </div>
-        <div class="user-dot"><div class="status-dot dot-success"></div></div>
       </div>
-
-      <div class="sk-divider" style="margin: .75rem 1rem;"></div>
 
       <!-- Nav sections -->
       @for (section of visibleSections; track section.title) {
@@ -46,7 +44,7 @@ interface NavSection { title: string; items: NavItem[]; }
         @for (item of section.items; track item.route) {
           <a class="sk-nav-item" [routerLink]="item.route" routerLinkActive="active"
              (click)="layout.close()">
-            <span class="nav-icon">{{ item.icon }}</span>
+            <span class="nav-icon"><sk-icon [name]="item.icon" [size]="19" /></span>
             <span>{{ item.label }}</span>
             @if (item.badge) { <span class="nav-badge">{{ item.badge }}</span> }
           </a>
@@ -56,9 +54,8 @@ interface NavSection { title: string; items: NavItem[]; }
       <!-- Spacer + logout -->
       <div style="flex:1"></div>
       <div class="signature"><app-dcodea-badge /></div>
-      <div class="sk-divider" style="margin: .5rem 1rem;"></div>
-      <button class="sk-nav-item logout-btn" style="margin-bottom:.75rem" (click)="auth.logout()">
-        <span class="nav-icon">⏻</span>
+      <button class="sk-nav-item logout-btn" style="margin-bottom:1rem" (click)="auth.logout()">
+        <span class="nav-icon"><sk-icon name="logout" [size]="19" /></span>
         <span>Cerrar sesión</span>
       </button>
     </aside>
@@ -68,16 +65,16 @@ interface NavSection { title: string; items: NavItem[]; }
     :host { display: contents; }
 
     .sidebar-mob-overlay {
-      position: fixed; inset: 0; background: rgba(0,0,0,.55);
+      position: fixed; inset: 0; background: rgba(19,19,22,.35);
       backdrop-filter: blur(2px); z-index: 799;
     }
 
-    .sidebar-user { display:flex; align-items:center; gap:.75rem; padding:.75rem 1.25rem; }
-    .user-avatar { width:36px; height:36px; border-radius:50%; background:var(--primary-glow); border:2px solid var(--primary); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:.875rem; color:var(--primary); flex-shrink:0; }
-    .user-name { font-size:.825rem; font-weight:600; color:var(--text-primary); }
-    .user-role { font-size:.72rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:.05em; }
-    .user-dot { margin-left:auto; }
-    .logout-btn { background:transparent; border:none; font:inherit; cursor:pointer; text-align:left; width:calc(100% - 1.5rem); color:var(--danger) !important; &:hover { background:var(--danger-bg) !important; } }
+    .sidebar-user { display:flex; align-items:center; gap:.75rem; margin:.25rem 1rem .5rem; padding:.75rem; border-radius:14px; background:rgba(255,255,255,.06); }
+    .user-avatar { width:36px; height:36px; border-radius:50%; background:#2a2a2f; display:flex; align-items:center; justify-content:center; font-weight:600; font-size:.82rem; color:#fff; flex-shrink:0; }
+    .user-info { min-width:0; }
+    .user-name { font-size:.86rem; font-weight:600; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .user-role { font-size:.76rem; color:#8b8b91; }
+    .logout-btn { background:transparent; border:none; font:inherit; font-size:.9rem; font-weight:500; cursor:pointer; text-align:left; width:calc(100% - 1.8rem); }
   `]
 })
 export class SidebarComponent {
@@ -85,33 +82,38 @@ export class SidebarComponent {
   layout = inject(LayoutService);
 
   get initials() {
-    return this.auth.user()?.nombre?.split(' ').map(w => w[0]).slice(0, 2).join('') ?? 'SK';
+    return this.auth.user()?.nombre?.split(' ').filter(w => /^\p{L}/u.test(w)).map(w => w[0]).slice(0, 2).join('') ?? 'SK';
   }
+
+  private static ROLES: Record<string, string> = {
+    ADMIN: 'Administrador', MESERO: 'Mesero', COCINA: 'Cocina', BARRA: 'Barra', MEXICO: 'Estación México', CAJA: 'Caja',
+  };
+  get rolLabel() { return SidebarComponent.ROLES[this.auth.rol() ?? ''] ?? this.auth.rol(); }
 
   private nav: NavSection[] = [
     {
       title: 'Administración', items: [
-        { label: 'Dashboard',    icon: '◈', route: '/admin/dashboard', roles: ['ADMIN'] },
-        { label: 'Productos',    icon: '☰', route: '/admin/productos',  roles: ['ADMIN'] },
-        { label: 'Categorías',   icon: '⊞', route: '/admin/categorias', roles: ['ADMIN'] },
-        { label: 'Usuarios',     icon: '◉', route: '/admin/usuarios',   roles: ['ADMIN'] },
+        { label: 'Dashboard',    icon: 'dashboard', route: '/admin/dashboard', roles: ['ADMIN'] },
+        { label: 'Productos',    icon: 'box', route: '/admin/productos',  roles: ['ADMIN'] },
+        { label: 'Categorías',   icon: 'folder', route: '/admin/categorias', roles: ['ADMIN'] },
+        { label: 'Usuarios',     icon: 'users', route: '/admin/usuarios',   roles: ['ADMIN'] },
       ]
     },
     {
       title: 'Servicio', items: [
-        { label: 'Mesas',     icon: '⊡', route: '/mesero/mesas',  roles: ['ADMIN', 'MESERO'] },
+        { label: 'Mesas',     icon: 'table', route: '/mesero/mesas',  roles: ['ADMIN', 'MESERO'] },
       ]
     },
     {
       title: 'Caja', items: [
-        { label: 'Caja',      icon: '◰', route: '/caja',          roles: ['ADMIN', 'CAJA'] },
+        { label: 'Caja',      icon: 'receipt', route: '/caja',          roles: ['ADMIN', 'CAJA'] },
       ]
     },
     {
       title: 'Estaciones', items: [
-        { label: 'Cocina',    icon: '◑', route: '/estacion/cocina',  roles: ['ADMIN', 'COCINA'] },
-        { label: 'Barra',     icon: '◐', route: '/estacion/barra',   roles: ['ADMIN', 'BARRA'] },
-        { label: 'México',    icon: '◒', route: '/estacion/mexico',  roles: ['ADMIN', 'MEXICO'] },
+        { label: 'Cocina',    icon: 'chef', route: '/estacion/cocina',  roles: ['ADMIN', 'COCINA'] },
+        { label: 'Barra',     icon: 'glass', route: '/estacion/barra',   roles: ['ADMIN', 'BARRA'] },
+        { label: 'México',    icon: 'taco', route: '/estacion/mexico',  roles: ['ADMIN', 'MEXICO'] },
       ]
     }
   ];

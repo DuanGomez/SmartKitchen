@@ -5,6 +5,6 @@ import { EstacionBaseComponent } from '../estacion-base.component';
   selector: 'app-cocina',
   standalone: true,
   imports: [EstacionBaseComponent],
-  template: `<app-estacion-base estacion="cocina" titulo="Cocina" icono="🍳" [color]="'var(--danger)'"></app-estacion-base>`
+  template: `<app-estacion-base estacion="cocina" titulo="Cocina" foto="photos/cocina.webp" descripcion="Parrilla, fritos y acompañamientos"></app-estacion-base>`
 })
 export class CocinaComponent {}
